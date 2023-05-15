@@ -1,0 +1,78 @@
+# Load the necessary libraries
+library(readr)
+library(caret)
+
+# Read the data
+heart <- read_csv("heart_failure_clinical_records_dataset.csv")
+
+# Inspect the data
+str(heart)
+
+# Convert the categorical variables to factors
+heart$anaemia <- as.factor(heart$anaemia)
+heart$diabetes <- as.factor(heart$diabetes)
+heart$high_blood_pressure <- as.factor(heart$high_blood_pressure)
+heart$sex <- as.factor(heart$sex)
+heart$smoking <- as.factor(heart$smoking)
+heart$DEATH_EVENT <- as.factor(heart$DEATH_EVENT)
+
+# Descriptive statistics
+summary(heart)
+
+# Histograms of the continuous variables
+par(mfrow=c(2,4))
+hist(heart$age)
+hist(heart$creatinine_phosphokinase)
+hist(heart$ejection_fraction)
+hist(heart$platelets)
+hist(heart$serum_creatinine)
+hist(heart$serum_sodium)
+hist(heart$time)
+
+# Boxplots of the continuous variables
+par(mfrow=c(2,2))
+boxplot(heart$age)
+boxplot(heart$creatinine_phosphokinase)
+boxplot(heart$ejection_fraction)
+boxplot(heart$platelets)
+boxplot(heart$serum_creatinine)
+boxplot(heart$serum_sodium)
+boxplot(heart$time)
+
+# Split the data into training and test sets
+set.seed(1)
+training_index <- createDataPartition(heart$DEATH_EVENT, p = .80, list= FALSE)
+training_set <- heart[training_index,]
+test_set <- heart[-training_index,]
+
+# Normalize the continuous variables
+heart_norm <- preProcess(heart, method=c("center", "scale"))
+training_set_norm <- predict(heart_norm, training_set)
+test_set_norm <- predict(heart_norm, test_set)
+
+# Fit a K-nearest neighbors model
+knn_model <- train(DEATH_EVENT ~ ., data = training_set_norm, method = "knn", metric = "ROC")
+
+# Make predictions on the test set
+knn_predictions <- predict(knn_model, test_set_norm, type = "prob")
+
+# Evaluate the model
+confusionMatrix(knn_predictions, test_set$DEATH_EVENT)
+
+# Fit a logistic regression model
+logistic_model <- train(DEATH_EVENT ~ ., data = training_set_norm, method = "glm", metric = "ROC")
+
+# Make predictions on the test set
+logistic_predictions <- predict(logistic_model, test_set_norm, type = "prob")
+
+# Evaluate the model
+confusionMatrix(logistic_predictions, test_set$DEATH_EVENT)
+
+# Fit a linear discriminant analysis model
+lda_model <- train(DEATH_EVENT ~ ., data = training_set_norm, method = "lda", metric = "ROC")
+
+# Make predictions on the test set
+lda_predictions <- predict(lda_model, test_set_norm, type = "prob")
+
+# Evaluate the model
+confusionMatrix(lda_predictions, test_set$DEATH_EVENT)
